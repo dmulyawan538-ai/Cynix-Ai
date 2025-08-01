@@ -17,14 +17,24 @@
             background-color: #1a202c; /* Warna latar belakang gelap */
             color: #e2e8f0; /* Warna teks terang */
         }
-        .chat-container {
-            max-height: calc(100vh - 12rem); /* Tinggi maksimum area chat */
+        /* Mengatur agar textarea tidak bisa diresize */
+        textarea {
+            resize: none;
         }
-        .chat-message.user {
-            background-color: #4a5568; /* Warna bubble pengguna */
+        /* Custom scrollbar untuk area chat */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
         }
-        .chat-message.ai {
-            background-color: #2d3748; /* Warna bubble AI */
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
         }
         .mode-button.active {
             border-color: #6366f1; /* Warna border saat aktif */
@@ -34,17 +44,9 @@
             background-color: #2d3748; /* Warna latar belakang modal */
             border: 1px solid #4a5568;
         }
-        .scrollable-content {
-            max-height: 100%;
-            overflow-y: auto;
-        }
-        /* Mengatur agar textarea tidak bisa diresize */
-        textarea {
-            resize: none;
-        }
     </style>
 </head>
-<body class="bg-slate-900 text-white flex flex-col items-center p-4">
+<body class="bg-slate-900 text-white flex flex-col items-center p-4 md:p-8 min-h-screen">
 
     <!-- Modal untuk menampilkan pesan error atau status -->
     <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-70">
@@ -56,30 +58,30 @@
     </div>
 
     <!-- Kontainer utama aplikasi -->
-    <div class="w-full max-w-4xl bg-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col h-screen max-h-screen">
+    <div class="w-full max-w-4xl bg-slate-800 rounded-3xl shadow-2xl p-4 md:p-6 flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
         
         <!-- Header -->
-        <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-indigo-400 animate__animated animate__fadeInDown">AI Multiguna</h1>
-            <p class="text-sm text-gray-400 mt-2 animate__animated animate__fadeIn">Teman AI Anda untuk berbagai kebutuhan</p>
+        <div class="text-center mb-4 md:mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400 animate__animated animate__fadeInDown">AI Multiguna</h1>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1 md:mt-2 animate__animated animate__fadeIn">Teman AI Anda untuk berbagai kebutuhan</p>
         </div>
 
         <!-- Pemilih Mode -->
-        <div class="flex flex-wrap justify-center gap-4 mb-6 animate__animated animate__fadeInUp">
-            <button id="mode-chat" class="mode-button active flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="chat">
-                <i class="fas fa-comments text-2xl mb-1"></i>
+        <div class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-4 md:mb-6 animate__animated animate__fadeInUp">
+            <button id="mode-chat" class="mode-button active flex-1 flex flex-col items-center p-2 md:p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="chat">
+                <i class="fas fa-comments text-xl md:text-2xl mb-1"></i>
                 <span class="text-xs font-semibold">Chat</span>
             </button>
-            <button id="mode-translate" class="mode-button flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="translate">
-                <i class="fas fa-language text-2xl mb-1"></i>
+            <button id="mode-translate" class="mode-button flex-1 flex flex-col items-center p-2 md:p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="translate">
+                <i class="fas fa-language text-xl md:text-2xl mb-1"></i>
                 <span class="text-xs font-semibold">Terjemahkan</span>
             </button>
-            <button id="mode-generate" class="mode-button flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="generate">
-                <i class="fas fa-image text-2xl mb-1"></i>
+            <button id="mode-generate" class="mode-button flex-1 flex flex-col items-center p-2 md:p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="generate">
+                <i class="fas fa-image text-xl md:text-2xl mb-1"></i>
                 <span class="text-xs font-semibold">Buat Gambar</span>
             </button>
-            <button id="mode-analyze" class="mode-button flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="analyze">
-                <i class="fas fa-camera text-2xl mb-1"></i>
+            <button id="mode-analyze" class="mode-button flex-1 flex flex-col items-center p-2 md:p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="analyze">
+                <i class="fas fa-camera text-xl md:text-2xl mb-1"></i>
                 <span class="text-xs font-semibold">Analisa Gambar</span>
             </button>
         </div>
@@ -87,19 +89,19 @@
         <!-- Area Chat -->
         <div id="chat-area" class="flex-1 overflow-y-auto p-4 rounded-xl mb-4 bg-slate-700 shadow-inner custom-scrollbar animate__animated animate__fadeIn">
             <!-- Pesan akan ditambahkan di sini -->
-            <div class="flex justify-center items-center my-4">
-                <p class="text-gray-400 text-sm italic">Pilih mode di atas untuk memulai</p>
+            <div class="flex justify-center items-center my-4 text-center">
+                <p class="text-gray-400 text-sm italic">Pilih mode di atas untuk memulai atau kirim pesan</p>
             </div>
         </div>
 
         <!-- Area Input -->
-        <div class="flex items-center gap-4 animate__animated animate__fadeInUp">
+        <div class="flex items-end gap-2 md:gap-4 animate__animated animate__fadeInUp">
             <input type="file" id="file-input" class="hidden" accept="image/*">
-            <button id="upload-button" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-full shadow-md transition-colors duration-200 flex items-center justify-center hidden">
+            <button id="upload-button" class="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-full shadow-md transition-colors duration-200 flex items-center justify-center hidden">
                 <i class="fas fa-upload"></i>
             </button>
-            <textarea id="user-input" class="flex-1 p-4 rounded-full bg-slate-700 border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 placeholder-gray-400 h-12 resize-none" placeholder="Ketik pesan Anda..."></textarea>
-            <button id="send-button" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-full shadow-md transition-colors duration-200 flex items-center justify-center">
+            <textarea id="user-input" class="flex-1 p-3 md:p-4 rounded-full bg-slate-700 border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 placeholder-gray-400 min-h-[44px] max-h-40 overflow-hidden" placeholder="Ketik pesan Anda..."></textarea>
+            <button id="send-button" class="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-full shadow-md transition-colors duration-200 flex items-center justify-center">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
@@ -107,7 +109,7 @@
     </div>
     
     <script>
-        const API_KEY = "AIzaSyDxAJWd_DqGdUMc0BgyewwsQiwNNuSqW5c"; // Kunci API Gemini Anda
+        const API_KEY = ""; // Kunci API Gemini Anda
 
         // Elemen DOM
         const chatArea = document.getElementById('chat-area');
@@ -172,19 +174,16 @@
                     btn.classList.add('active');
                 }
             });
-            chatArea.innerHTML = '';
+            chatArea.innerHTML = `<div class="flex justify-center items-center my-4 text-center">
+                                    <p class="text-gray-400 text-sm italic">Pilih mode di atas untuk memulai atau kirim pesan</p>
+                                  </div>`;
             chatHistory = [];
             userInput.placeholder = getPlaceholderByMode(newMode);
             
-            if (newMode === 'chat' || newMode === 'generate') {
+            if (newMode === 'chat' || newMode === 'generate' || newMode === 'translate') {
                 uploadButton.classList.add('hidden');
-                userInput.type = 'text';
-            } else if (newMode === 'translate') {
-                uploadButton.classList.add('hidden');
-                userInput.type = 'text';
             } else if (newMode === 'analyze') {
                 uploadButton.classList.remove('hidden');
-                userInput.type = 'text';
             }
         }
 
@@ -207,6 +206,7 @@
             }
 
             userInput.value = '';
+            userInput.style.height = 'auto'; // Mengatur ulang tinggi textarea
             setLoading(true);
 
             // Tambahkan pesan pengguna ke chat
@@ -250,7 +250,7 @@
         // Fungsi untuk menambahkan pesan teks ke chat
         function appendMessage(text, sender, isRTL = false) {
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('chat-message', sender, 'p-3', 'rounded-2xl', 'max-w-xs', 'md:max-w-lg', 'shadow-md', 'my-2', 'animate__animated', 'animate__fadeIn');
+            messageDiv.classList.add('chat-message', sender, 'p-3', 'rounded-2xl', 'max-w-[85%]', 'md:max-w-[70%]', 'shadow-md', 'my-2', 'animate__animated', 'animate__fadeIn');
             
             if (sender === 'user') {
                 messageDiv.classList.add('ml-auto', 'bg-indigo-600', 'text-white', 'rounded-br-none');
@@ -272,7 +272,7 @@
         // Fungsi untuk menambahkan gambar ke chat
         function appendImage(src, sender) {
             const imageDiv = document.createElement('div');
-            imageDiv.classList.add('chat-message', sender, 'p-3', 'rounded-2xl', 'max-w-xs', 'md:max-w-lg', 'shadow-md', 'my-2', 'animate__animated', 'animate__fadeIn');
+            imageDiv.classList.add('chat-message', sender, 'p-3', 'rounded-2xl', 'max-w-[85%]', 'md:max-w-[70%]', 'shadow-md', 'my-2', 'animate__animated', 'animate__fadeIn');
             
             if (sender === 'user') {
                 imageDiv.classList.add('ml-auto', 'bg-indigo-600', 'rounded-br-none');
@@ -293,6 +293,7 @@
             isLoading = status;
             sendButton.disabled = status;
             userInput.disabled = status;
+            uploadButton.disabled = status;
             sendButton.innerHTML = status ? `<i class="fas fa-spinner fa-spin"></i>` : `<i class="fas fa-paper-plane"></i>`;
         }
 
@@ -381,8 +382,13 @@
                 }
             }
         }
-    </script>
 
+        // Penyesuaian tinggi textarea secara otomatis
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+        });
+    </script>
 </body>
 </html>
 
