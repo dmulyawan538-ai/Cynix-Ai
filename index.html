@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Multiguna</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Animate.css CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS kustom untuk tampilan */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Warna latar belakang gelap */
+            color: #e2e8f0; /* Warna teks terang */
+        }
+        .chat-container {
+            max-height: calc(100vh - 12rem); /* Tinggi maksimum area chat */
+        }
+        .chat-message.user {
+            background-color: #4a5568; /* Warna bubble pengguna */
+        }
+        .chat-message.ai {
+            background-color: #2d3748; /* Warna bubble AI */
+        }
+        .mode-button.active {
+            border-color: #6366f1; /* Warna border saat aktif */
+            background-color: #4338ca; /* Warna latar belakang saat aktif */
+        }
+        .modal-content {
+            background-color: #2d3748; /* Warna latar belakang modal */
+            border: 1px solid #4a5568;
+        }
+        .scrollable-content {
+            max-height: 100%;
+            overflow-y: auto;
+        }
+        /* Mengatur agar textarea tidak bisa diresize */
+        textarea {
+            resize: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white flex flex-col items-center p-4">
+
+    <!-- Modal untuk menampilkan pesan error atau status -->
+    <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-70">
+        <div class="modal-content p-6 rounded-2xl shadow-xl w-11/12 md:w-1/3 text-center animate__animated animate__fadeInUp">
+            <h3 id="modal-title" class="text-xl font-bold mb-4">Pesan</h3>
+            <p id="modal-message" class="text-base mb-6"></p>
+            <button onclick="document.getElementById('modal').classList.add('hidden')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-full shadow-md transition-colors duration-200">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Kontainer utama aplikasi -->
+    <div class="w-full max-w-4xl bg-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col h-screen max-h-screen">
+        
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-indigo-400 animate__animated animate__fadeInDown">AI Multiguna</h1>
+            <p class="text-sm text-gray-400 mt-2 animate__animated animate__fadeIn">Teman AI Anda untuk berbagai kebutuhan</p>
+        </div>
+
+        <!-- Pemilih Mode -->
+        <div class="flex flex-wrap justify-center gap-4 mb-6 animate__animated animate__fadeInUp">
+            <button id="mode-chat" class="mode-button active flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="chat">
+                <i class="fas fa-comments text-2xl mb-1"></i>
+                <span class="text-xs font-semibold">Chat</span>
+            </button>
+            <button id="mode-translate" class="mode-button flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="translate">
+                <i class="fas fa-language text-2xl mb-1"></i>
+                <span class="text-xs font-semibold">Terjemahkan</span>
+            </button>
+            <button id="mode-generate" class="mode-button flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="generate">
+                <i class="fas fa-image text-2xl mb-1"></i>
+                <span class="text-xs font-semibold">Buat Gambar</span>
+            </button>
+            <button id="mode-analyze" class="mode-button flex-1 md:flex-initial flex flex-col items-center p-3 rounded-2xl border-2 border-transparent transition-all duration-300 transform hover:scale-105" data-mode="analyze">
+                <i class="fas fa-camera text-2xl mb-1"></i>
+                <span class="text-xs font-semibold">Analisa Gambar</span>
+            </button>
+        </div>
+
+        <!-- Area Chat -->
+        <div id="chat-area" class="flex-1 overflow-y-auto p-4 rounded-xl mb-4 bg-slate-700 shadow-inner custom-scrollbar animate__animated animate__fadeIn">
+            <!-- Pesan akan ditambahkan di sini -->
+            <div class="flex justify-center items-center my-4">
+                <p class="text-gray-400 text-sm italic">Pilih mode di atas untuk memulai</p>
+            </div>
+        </div>
+
+        <!-- Area Input -->
+        <div class="flex items-center gap-4 animate__animated animate__fadeInUp">
+            <input type="file" id="file-input" class="hidden" accept="image/*">
+            <button id="upload-button" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-full shadow-md transition-colors duration-200 flex items-center justify-center hidden">
+                <i class="fas fa-upload"></i>
+            </button>
+            <textarea id="user-input" class="flex-1 p-4 rounded-full bg-slate-700 border border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 placeholder-gray-400 h-12 resize-none" placeholder="Ketik pesan Anda..."></textarea>
+            <button id="send-button" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white text-xl rounded-full shadow-md transition-colors duration-200 flex items-center justify-center">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+    </div>
+    
+    <script>
+        const API_KEY = "AIzaSyDxAJWd_DqGdUMc0BgyewwsQiwNNuSqW5c"; // Kunci API Gemini Anda
+
+        // Elemen DOM
+        const chatArea = document.getElementById('chat-area');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const fileInput = document.getElementById('file-input');
+        const uploadButton = document.getElementById('upload-button');
+        const modeButtons = document.querySelectorAll('.mode-button');
+
+        // State Aplikasi
+        let currentMode = 'chat';
+        let isLoading = false;
+        let chatHistory = [];
+
+        // Mengatur mode awal
+        updateMode(currentMode);
+
+        // Event listener untuk tombol mode
+        modeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const newMode = button.dataset.mode;
+                updateMode(newMode);
+            });
+        });
+
+        // Event listener untuk tombol kirim
+        sendButton.addEventListener('click', () => handleInput());
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleInput();
+            }
+        });
+        
+        // Event listener untuk tombol upload
+        uploadButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64Image = event.target.result.split(',')[1];
+                    handleInput(null, base64Image);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Fungsi untuk menampilkan pesan modal
+        function showModal(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        // Fungsi untuk memperbarui tampilan mode
+        function updateMode(newMode) {
+            currentMode = newMode;
+            modeButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === newMode) {
+                    btn.classList.add('active');
+                }
+            });
+            chatArea.innerHTML = '';
+            chatHistory = [];
+            userInput.placeholder = getPlaceholderByMode(newMode);
+            
+            if (newMode === 'chat' || newMode === 'generate') {
+                uploadButton.classList.add('hidden');
+                userInput.type = 'text';
+            } else if (newMode === 'translate') {
+                uploadButton.classList.add('hidden');
+                userInput.type = 'text';
+            } else if (newMode === 'analyze') {
+                uploadButton.classList.remove('hidden');
+                userInput.type = 'text';
+            }
+        }
+
+        // Mendapatkan placeholder sesuai mode
+        function getPlaceholderByMode(mode) {
+            switch(mode) {
+                case 'chat': return 'Tanyakan apa saja...';
+                case 'translate': return 'Ketik teks Bahasa Indonesia untuk diterjemahkan...';
+                case 'generate': return 'Berikan deskripsi gambar yang Anda inginkan...';
+                case 'analyze': return 'Ketik prompt (opsional) atau unggah gambar...';
+                default: return 'Ketik pesan Anda...';
+            }
+        }
+
+        // Fungsi utama untuk menangani input
+        async function handleInput(imagePrompt = null, imageBase64 = null) {
+            const text = userInput.value.trim();
+            if ((text === '' && !imageBase64) || isLoading) {
+                return;
+            }
+
+            userInput.value = '';
+            setLoading(true);
+
+            // Tambahkan pesan pengguna ke chat
+            if (text) {
+                appendMessage(text, 'user');
+            }
+            if (imageBase64) {
+                appendImage(imageBase64, 'user');
+            }
+
+            try {
+                let response = '';
+
+                switch (currentMode) {
+                    case 'chat':
+                        response = await callChatApi(text);
+                        appendMessage(response, 'ai');
+                        break;
+                    case 'translate':
+                        response = await callTranslateApi(text);
+                        appendMessage(response, 'ai', true); // true untuk text-align-right
+                        break;
+                    case 'generate':
+                        const imageUrl = await callGenerateImageApi(text);
+                        appendImage(imageUrl, 'ai');
+                        break;
+                    case 'analyze':
+                        const analysisPrompt = text || "Jelaskan gambar ini secara detail.";
+                        response = await callAnalyzeImageApi(analysisPrompt, imageBase64);
+                        appendMessage(response, 'ai');
+                        break;
+                }
+            } catch (error) {
+                appendMessage(`Maaf, terjadi kesalahan: ${error.message}`, 'ai');
+                showModal('Error', `Terjadi kesalahan saat memproses permintaan: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Fungsi untuk menambahkan pesan teks ke chat
+        function appendMessage(text, sender, isRTL = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', sender, 'p-3', 'rounded-2xl', 'max-w-xs', 'md:max-w-lg', 'shadow-md', 'my-2', 'animate__animated', 'animate__fadeIn');
+            
+            if (sender === 'user') {
+                messageDiv.classList.add('ml-auto', 'bg-indigo-600', 'text-white', 'rounded-br-none');
+            } else {
+                messageDiv.classList.add('mr-auto', 'bg-slate-700', 'text-white', 'rounded-bl-none');
+            }
+
+            const messageText = document.createElement('p');
+            messageText.textContent = text;
+            if (isRTL) {
+                messageText.dir = 'rtl';
+                messageText.style.textAlign = 'right';
+            }
+            messageDiv.appendChild(messageText);
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Fungsi untuk menambahkan gambar ke chat
+        function appendImage(src, sender) {
+            const imageDiv = document.createElement('div');
+            imageDiv.classList.add('chat-message', sender, 'p-3', 'rounded-2xl', 'max-w-xs', 'md:max-w-lg', 'shadow-md', 'my-2', 'animate__animated', 'animate__fadeIn');
+            
+            if (sender === 'user') {
+                imageDiv.classList.add('ml-auto', 'bg-indigo-600', 'rounded-br-none');
+            } else {
+                imageDiv.classList.add('mr-auto', 'bg-slate-700', 'rounded-bl-none');
+            }
+
+            const imageElement = document.createElement('img');
+            imageElement.src = src;
+            imageElement.classList.add('rounded-lg', 'w-full', 'h-auto', 'object-cover');
+            imageDiv.appendChild(imageElement);
+            chatArea.appendChild(imageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Fungsi untuk mengatur status loading
+        function setLoading(status) {
+            isLoading = status;
+            sendButton.disabled = status;
+            userInput.disabled = status;
+            sendButton.innerHTML = status ? `<i class="fas fa-spinner fa-spin"></i>` : `<i class="fas fa-paper-plane"></i>`;
+        }
+
+        // ---- Fungsi API Gemini ----
+
+        async function callChatApi(text) {
+            chatHistory.push({ role: "user", parts: [{ text: text }] });
+            const payload = { contents: chatHistory };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            const response = await apiCall(apiUrl, payload);
+            const responseText = response.candidates[0].content.parts[0].text;
+            chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+            return responseText;
+        }
+
+        async function callTranslateApi(text) {
+            const prompt = `Translate the following Indonesian text into conversational, friendly Arabic. Only provide the translated text, nothing else. Text: "${text}"`;
+            const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            const response = await apiCall(apiUrl, payload);
+            return response.candidates[0].content.parts[0].text;
+        }
+        
+        async function callGenerateImageApi(prompt) {
+            const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1 } };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+            const response = await apiCall(apiUrl, payload);
+            const imageBase64 = response.predictions[0].bytesBase64Encoded;
+            return `data:image/png;base64,${imageBase64}`;
+        }
+
+        async function callAnalyzeImageApi(prompt, base64Image) {
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: prompt },
+                        {
+                            inlineData: {
+                                mimeType: "image/png",
+                                data: base64Image
+                            }
+                        }
+                    ]
+                }],
+            };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            const response = await apiCall(apiUrl, payload);
+            return response.candidates[0].content.parts[0].text;
+        }
+
+        // Fungsi umum untuk panggilan API dengan exponential backoff
+        async function apiCall(apiUrl, payload, retryCount = 5) {
+            let delay = 1000;
+            for (let i = 0; i < retryCount; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) {
+                        if (i < retryCount - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                            continue;
+                        } else {
+                            throw new Error('Rate limit terlampaui setelah beberapa kali coba.');
+                        }
+                    }
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error.message || 'Respons API tidak berhasil.');
+                    }
+                    return await response.json();
+                } catch (e) {
+                    if (i < retryCount - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>
+
